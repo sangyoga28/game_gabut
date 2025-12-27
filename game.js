@@ -1,5 +1,6 @@
-import { Renderer } from './renderer.js';
-import { Generator } from './generator.js';
+import { Renderer3D } from './renderer3d.js';
+import { Character } from './character.js';
+import { ObstacleManager } from './obstacles.js';
 
 export class Game {
     constructor(canvas, callbacks) {
@@ -7,8 +8,9 @@ export class Game {
         this.ctx = canvas.getContext('2d');
         this.callbacks = callbacks;
 
-        this.renderer = new Renderer(this.canvas, this.ctx);
-        this.generator = new Generator();
+        this.renderer = new Renderer3D(this.canvas, this.ctx);
+        this.character = new Character();
+        this.obstacleManager = new ObstacleManager();
 
         this.reset();
         this.resize();
@@ -16,152 +18,176 @@ export class Game {
 
     reset() {
         this.score = 0;
+        this.coins = 0;
         this.distance = 0;
-        this.speed = 5; // Base speed
-        this.maxSpeed = 20;
-        this.difficulty = 0; // 0 to 100
+        this.speed = 8; // Base speed
+        this.maxSpeed = 25;
+        this.difficulty = 0; // 0 to 1
         this.isGameOver = false;
         this.isRunning = false;
+        this.combo = 0;
+        this.maxCombo = 0;
 
-        this.player = {
-            lane: 1, // 0: Left, 1: Middle, 2: Right
-            targetX: 0,
-            x: 0,
-            y: 0,
-            width: 50,
-            height: 80
-        };
-
-        this.obstacles = [];
-        this.lastUpdateTime = 0;
-
-        this.generator.reset();
+        this.character.reset();
+        this.obstacleManager.reset();
         this.renderer.reset();
 
-        this.updatePlayerPosition(true);
+        this.lastUpdateTime = 0;
     }
 
     resize() {
         const container = this.canvas.parentElement;
         this.canvas.width = container.clientWidth;
         this.canvas.height = container.clientHeight;
-
-        this.laneWidth = this.canvas.width / 3;
-        this.updatePlayerPosition(true);
-    }
-
-    updatePlayerPosition(immediate = false) {
-        this.player.targetX = this.player.lane * this.laneWidth + this.laneWidth / 2;
-        this.player.y = this.canvas.height - 150;
-
-        if (immediate) {
-            this.player.x = this.player.targetX;
-        }
+        this.renderer.updateDimensions();
     }
 
     start() {
-        console.log('Game internal start called. isRunning:', this.isRunning);
+        console.log('Game starting...');
         if (this.isRunning) return;
+
         this.reset();
         this.isRunning = true;
         this.lastUpdateTime = performance.now();
 
-        // Add Input Listeners
-        window.addEventListener('keydown', this.handleInput.bind(this));
+        // Remove old event listeners
+        window.removeEventListener('keydown', this.handleInput);
+        window.removeEventListener('keyup', this.handleKeyUp);
 
-        console.log('Animation loop beginning');
+        // Add new event listeners
+        this.handleInput = this.handleInput.bind(this);
+        this.handleKeyUp = this.handleKeyUp.bind(this);
+        window.addEventListener('keydown', this.handleInput);
+        window.addEventListener('keyup', this.handleKeyUp);
+
+        console.log('Starting animation loop');
         requestAnimationFrame(this.loop.bind(this));
     }
 
     handleInput(e) {
         if (!this.isRunning || this.isGameOver) return;
 
-        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-            if (this.player.lane > 0) this.player.lane--;
-        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-            if (this.player.lane < 2) this.player.lane++;
+        switch (e.key.toLowerCase()) {
+            case 'a':
+            case 'arrowleft':
+                this.character.moveLeft();
+                break;
+            case 'd':
+            case 'arrowright':
+                this.character.moveRight();
+                break;
+            case 'w':
+            case 'arrowup':
+            case ' ':
+                e.preventDefault();
+                this.character.jump();
+                break;
+            case 's':
+            case 'arrowdown':
+                this.character.roll();
+                break;
         }
+    }
 
-        this.updatePlayerPosition();
+    handleKeyUp(e) {
+        // Handle key release if needed
     }
 
     update(dt) {
         if (!this.isRunning || this.isGameOver) return;
 
-        // Calculate Difficulty (0-100 based on score)
-        this.difficulty = Math.min(100, this.score / 100);
+        // Calculate difficulty (0 to 1 based on distance)
+        this.difficulty = Math.min(1, this.distance / 10000);
 
-        // Increase Speed based on Difficulty
-        this.speed = 5 + (this.difficulty / 100) * (this.maxSpeed - 5);
+        // Increase speed based on difficulty
+        this.speed = 8 + (this.difficulty * (this.maxSpeed - 8));
 
-        // Smoothly move player to target lane
-        const lerpFactor = 0.2;
-        this.player.x += (this.player.targetX - this.player.x) * lerpFactor;
+        // Update distance and base score
+        this.distance += this.speed * dt * 0.5;
+        this.score = Math.floor(this.distance * this.character.scoreMultiplier);
 
-        // Update Distance and Score
-        this.distance += (this.speed * dt) / 100;
-        this.score = Math.floor(this.distance * 10);
+        // Update character
+        this.character.update(dt);
 
+        // Update obstacles and collectibles
+        this.obstacleManager.update(this.speed * dt * 0.5, this.difficulty, this.character.z);
+
+        // Check collisions
+        const collisions = this.obstacleManager.checkCollisions(this.character);
+
+        // Handle obstacle collision
+        if (collisions.obstacle && !this.character.isInvincible) {
+            this.gameOver();
+            return;
+        }
+
+        // Handle coin collection
+        if (collisions.coins.length > 0) {
+            this.coins += collisions.coins.length;
+            this.score += collisions.coins.length * 10 * this.character.scoreMultiplier;
+            this.combo += collisions.coins.length;
+            if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+        } else {
+            // Reset combo if no coins collected
+            if (this.combo > 0) this.combo = Math.max(0, this.combo - 0.1);
+        }
+
+        // Handle power-up collection
+        for (const powerup of collisions.powerups) {
+            if (powerup.type === 'magnet') {
+                this.character.activateMagnet(300);
+            } else if (powerup.type === 'multiplier') {
+                this.character.activateMultiplier(2, 300);
+            }
+        }
+
+        // Update UI callbacks
         this.callbacks.onScoreUpdate(this.score);
-        this.callbacks.onSpeedUpdate(((this.speed - 5) / (this.maxSpeed - 5)) * 100);
+        this.callbacks.onSpeedUpdate(((this.speed - 8) / (this.maxSpeed - 8)) * 100);
 
-        // Spawn Obstacles
-        const newObstacles = this.generator.update(this.distance, this.difficulty, this.laneWidth);
-        if (newObstacles) {
-            this.obstacles.push(...newObstacles);
+        if (this.callbacks.onCoinsUpdate) {
+            this.callbacks.onCoinsUpdate(this.coins);
         }
-
-        // Update Obstacles
-        for (let i = this.obstacles.length - 1; i >= 0; i--) {
-            const obs = this.obstacles[i];
-            obs.y += this.speed * dt * 0.5;
-
-            // Collision Detection
-            if (this.checkCollision(this.player, obs)) {
-                this.gameOver();
-            }
-
-            // Remove off-screen obstacles
-            if (obs.y > this.canvas.height + 100) {
-                this.obstacles.splice(i, 1);
-            }
+        if (this.callbacks.onComboUpdate) {
+            this.callbacks.onComboUpdate(Math.floor(this.combo));
         }
-    }
-
-    checkCollision(p, o) {
-        const pPadding = 10; // Hitbox padding
-        return p.x - p.width / 2 + pPadding < o.x + o.width / 2 &&
-            p.x + p.width / 2 - pPadding > o.x - o.width / 2 &&
-            p.y < o.y + o.height &&
-            p.y + p.height > o.y;
     }
 
     gameOver() {
         this.isGameOver = true;
         this.isRunning = false;
-        window.removeEventListener('keydown', this.handleInput.bind(this));
+
+        window.removeEventListener('keydown', this.handleInput);
+        window.removeEventListener('keyup', this.handleKeyUp);
 
         this.callbacks.onGameOver({
             score: this.score,
-            distance: this.distance
+            distance: Math.floor(this.distance),
+            coins: this.coins,
+            maxCombo: Math.floor(this.maxCombo)
         });
     }
 
     loop(time) {
         if (!this.isRunning && !this.isGameOver) return;
 
-        const dt = (time - this.lastUpdateTime) / 16.67; // Normalized to 60fps
+        const dt = Math.min((time - this.lastUpdateTime) / 16.67, 2); // Cap at 2x normal speed
         this.lastUpdateTime = time;
 
         this.update(dt);
 
+        // Render
         this.renderer.draw({
-            player: this.player,
-            obstacles: this.obstacles,
+            player: this.character.getState(),
+            obstacles: this.obstacleManager.getObstacles(),
+            collectibles: this.obstacleManager.getCollectibles(),
             speed: this.speed,
             difficulty: this.difficulty,
-            laneWidth: this.laneWidth,
-            canvas: this.canvas
+            gameState: {
+                score: this.score,
+                coins: this.coins,
+                combo: this.combo
+            }
         });
 
         if (!this.isGameOver) {

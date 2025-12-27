@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hindari Lubang Jalanan - Modern Game</title>
+    <title>Hindari Lubang - 3D Runner</title>
     <link rel="stylesheet" href="./style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Outfit:wght@300;400;600&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
     <div id="app">
         <!-- Main Game Canvas -->
@@ -20,32 +24,49 @@
             <div id="start-screen" class="overlay active">
                 <div class="glass-card main-menu">
                     <h1 class="glitch-text" data-text="HINDARI LUBANG">HINDARI LUBANG</h1>
-                    <p class="subtitle">Tantangan Jalanan Indonesia</p>
+                    <p class="subtitle">3D Endless Runner</p>
                     <div class="instructions">
                         <div class="key-hint">
-                            <span class="key">A</span> atau <span class="key">←</span> KIRI
+                            <span class="key">A</span> / <span class="key">←</span> KIRI
+                            <span class="key">D</span> / <span class="key">→</span> KANAN
                         </div>
                         <div class="key-hint">
-                            <span class="key">D</span> atau <span class="key">→</span> KANAN
+                            <span class="key">W</span> / <span class="key">↑</span> / <span class="key">SPACE</span>
+                            LOMPAT
+                        </div>
+                        <div class="key-hint">
+                            <span class="key">S</span> / <span class="key">↓</span> GULING
                         </div>
                     </div>
                     <button id="start-btn" class="primary-btn">MULAI BALAPAN</button>
                     <div class="stats-brief">
                         <span>REKOR: <span id="high-score">0</span></span>
+                        <span>KOIN: <span id="high-coins">0</span></span>
                     </div>
                 </div>
             </div>
 
             <!-- HUD (Heads-Up Display) -->
             <div id="hud" class="overlay">
-                <div class="score-badge glass">
-                    <span class="label">SKOR</span>
-                    <span id="current-score" class="value">000000</span>
+                <div class="hud-top">
+                    <div class="score-badge glass">
+                        <span class="label">SKOR</span>
+                        <span id="current-score" class="value">000000</span>
+                    </div>
+                    <div class="coins-badge glass">
+                        <span class="label">💰 KOIN</span>
+                        <span id="current-coins" class="value">0</span>
+                    </div>
                 </div>
-                <div class="speed-meter glass">
-                    <span class="label">KECEPATAN</span>
-                    <div class="meter-bar">
-                        <div id="speed-fill" class="fill"></div>
+                <div class="hud-bottom">
+                    <div class="speed-meter glass">
+                        <span class="label">KECEPATAN</span>
+                        <div class="meter-bar">
+                            <div id="speed-fill" class="fill"></div>
+                        </div>
+                    </div>
+                    <div class="combo-badge glass">
+                        <span id="current-combo" class="combo-text">x0</span>
                     </div>
                 </div>
             </div>
@@ -53,7 +74,7 @@
             <!-- Game Over Screen -->
             <div id="game-over-screen" class="overlay">
                 <div class="glass-card game-over">
-                    <h2 class="danger-text">YAH, KEJEGLONG!</h2>
+                    <h2 class="danger-text">GAME OVER!</h2>
                     <div class="final-stats">
                         <div class="stat-item">
                             <span class="label">SKOR AKHIR</span>
@@ -63,6 +84,14 @@
                             <span class="label">JARAK</span>
                             <span id="final-distance" class="value">0m</span>
                         </div>
+                        <div class="stat-item">
+                            <span class="label">KOIN</span>
+                            <span id="final-coins" class="value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="label">MAX COMBO</span>
+                            <span id="final-combo" class="value">0</span>
+                        </div>
                     </div>
                     <button id="restart-btn" class="primary-btn">MAIN LAGI</button>
                 </div>
@@ -71,4 +100,5 @@
     </div>
     <script type="module" src="./main.js"></script>
 </body>
+
 </html>

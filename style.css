@@ -339,10 +339,19 @@ canvas {
 
 /* HUD Styling */
 #hud {
+    flex-direction: column;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: stretch;
     padding: 1.5rem;
     pointer-events: none;
+}
+
+.hud-top,
+.hud-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
 }
 
 .score-badge,
@@ -379,6 +388,7 @@ canvas {
 }
 
 .score-badge .label,
+.coins-badge .label,
 .speed-meter .label {
     font-size: 0.65rem;
     font-weight: 700;
@@ -388,7 +398,8 @@ canvas {
     text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
 }
 
-.score-badge .value {
+.score-badge .value,
+.coins-badge .value {
     font-family: var(--font-heading);
     font-size: 1.8rem;
     color: var(--primary);
@@ -396,8 +407,63 @@ canvas {
     filter: drop-shadow(0 0 10px rgba(0, 242, 255, 0.6));
 }
 
+.coins-badge {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.12) 0%, rgba(255, 165, 0, 0.06) 100%);
+}
+
+.coins-badge .value {
+    color: #ffd700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6));
+}
+
 .speed-meter {
     width: 160px;
+}
+
+.combo-badge {
+    background: linear-gradient(135deg, rgba(255, 0, 255, 0.12) 0%, rgba(255, 0, 255, 0.06) 100%);
+    backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(255, 0, 255, 0.3);
+    padding: 1rem 1.5rem;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    box-shadow:
+        0 8px 16px rgba(0, 0, 0, 0.4),
+        0 0 20px rgba(255, 0, 255, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.combo-text {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    color: #ff00ff;
+    text-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+    font-weight: 700;
+}
+
+.stats-brief {
+    margin-top: 2rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    padding: 0.8rem 1.5rem;
+    background: rgba(0, 242, 255, 0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 242, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+}
+
+.stats-brief span {
+    color: var(--primary);
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
 }
 
 .meter-bar {
@@ -450,7 +516,7 @@ canvas {
 .final-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+    gap: 1.2rem;
     margin-bottom: 2.5rem;
 }
 
